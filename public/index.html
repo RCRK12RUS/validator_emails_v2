@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Продвинутый валидатор Email - до 50,000 адресов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .header .limit {
+            background: #27ae60;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+
+        .btn-stats {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 25px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .main-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-card.valid { border-left-color: #27ae60; }
+        .stat-card.invalid { border-left-color: #e74c3c; }
+        .stat-card.not-existing { border-left-color: #e67e22; }
+        .stat-card.format-error { border-left-color: #f39c12; }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .stat-percentage {
+            font-size: 0.8em;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+
+        .performance-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .batch-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #e8f4fd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            margin-bottom: 20px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .results-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-valid {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status-invalid {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .status-not-existing {
+            color: #e67e22;
+            font-weight: bold;
+        }
+
+        .status-format-error {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .status-smtp-error {
+            color: #8e44ad;
+            font-weight: bold;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .detailed-stats {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .stat-item .count {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .domains-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .domain-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .domain-item:last-child {
+            border-bottom: none;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success { background: #27ae60; }
+        .notification.error { background: #e74c3c; }
+        .notification.warning { background: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Продвинутый валидатор Email</h1>
+            <div class="subtitle">Детальная проверка до 50,000 адресов с расширенной статистикой</div>
+            <div class="limit">Без ограничений по количеству файлов • Максимум 50,000 email'ов за проверку</div>
+        </div>
+
+        <div class="content">
+            <div class="upload-section">
+                <h2>📁 Загрузка файла</h2>
+                
+                <div class="instructions">
+                    <h3>📋 Как использовать:</h3>
+                    <ul>
+                        <li>Подготовьте файл с email адресами (TXT или CSV)</li>
+                        <li>Каждый email должен быть на новой строке</li>
+                        <li>Максимум: 50,000 email'ов за одну проверку</li>
+                        <li>Поддерживаются большие файлы до 100MB</li>
+                        <li>Результаты включают детальную статистику по категориям</li>
+                    </ul>
+                </div>
+
+                <div class="performance-info">
+                    <strong>⚡ Производительность:</strong><br>
+                    Проверка 50,000 email'ов займет примерно 4-8 часов<br>
+                    <small>Скорость зависит от доступности SMTP серверов</small>
+                </div>
+
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" class="file-input" accept=".txt,.csv" multiple>
+                    <div style="text-align: center; margin-top: 10px; color: #7f8c8d;">
+                        Можно выбрать несколько файлов
+                    </div>
+                </div>
+
+                <div class="main-stats">
+                    <div class="stat-card valid">
+                        <div class="stat-number" id="statValid">0</div>
+                        <div class="stat-label">✅ Валидные</div>
+                        <div class="stat-percentage" id="statValidPercent">0%</div>
+                    </div>
+                    <div class="stat-card invalid">
+                        <div class="stat-number" id="statInvalid">0</div>
+                        <div class="stat-label">❌ Невалидные</div>
+                        <div class="stat-percentage" id="statInvalidPercent">0%</div>
+                    </div>
+                    <div class="stat-card not-existing">
+                        <div class="stat-number" id="statNotExisting">0</div>
+                        <div class="stat-label">📭 Несуществующие</div>
+                        <div class="stat-percentage" id="statNotExistingPercent">0%</div>
+                    </div>
+                    <div class="stat-card format-error">
+                        <div class="stat-number" id="statFormatError">0</div>
+                        <div class="stat-label">📝 Ошибки формата</div>
+                        <div class="stat-percentage" id="statFormatErrorPercent">0%</div>
+                    </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                </div>
+
+                <div class="batch-info">
+                    <span>Проверено:</span>
+                    <span id="checkedInfo">0 из 0</span>
+                    <span>Скорость:</span>
+                    <span id="speedInfo">0/мин</span>
+                    <span>Время:</span>
+                    <span id="timeInfo">00:00:00</span>
+                </div>
+
+                <button id="validateBtn" class="btn" disabled>
+                    <span id="validateText">🚀 Начать проверку</span>
+                </button>
+                <button id="stopBtn" class="btn btn-stop" disabled>⏹️ Остановить проверку</button>
+                
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="results">📋 Результаты</button>
+                    <button class="tab-button" data-tab="statistics">📊 Статистика</button>
+                    <button class="tab-button" data-tab="export">💾 Экспорт</button>
+                </div>
+
+                <div class="tab-content active" id="results-tab">
+                    <div class="results-container">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th width="35%">Email</th>
+                                    <th width="15%">Статус</th>
+                                    <th width="25%">Категория</th>
+                                    <th width="25%">Сообщение</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                        Загрузите файл и начните проверку<br>
+                                        <small>Результаты появятся здесь в реальном времени</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="statistics-tab">
+                    <div class="detailed-stats">
+                        <h3>📈 Детальная статистика</h3>
+                        <div class="stats-grid" id="detailedStats">
+                            <div class="stat-item">
+                                <span>Всего обработано:</span>
+                                <span class="count" id="statTotal">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Валидные email:</span>
+                                <span class="count" id="statValidDetailed">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Неверный формат:</span>
+                                <span class="count" id="statInvalidFormat">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Нет MX записей:</span>
+                                <span class="count" id="statNoMx">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Не существуют:</span>
+                                <span class="count" id="statNotExist">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Ошибки SMTP:</span>
+                                <span class="count" id="statSmtpError">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Таймауты:</span>
+                                <span class="count" id="statTimeout">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Ошибки подключения:</span>
+                                <span class="count" id="statConnection">0</span>
+                            </div>
+                        </div>
+
+                        <h4 style="margin-top: 20px;">🏷️ Топ доменов</h4>
+                        <div class="domains-list" id="topDomains">
+                            <div style="text-align: center; color: #7f8c8d; padding: 20px;">
+                                Статистика по доменам появится после проверки
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="export-tab">
+                    <div class="detailed-stats">
+                        <h3>💾 Экспорт результатов</h3>
+                        <p>Выберите формат для экспорта результатов проверки:</p>
+                        
+                        <div class="export-options">
+                            <button id="exportCsv" class="btn btn-export" disabled>📊 CSV формат</button>
+                            <button id="exportJson" class="btn btn-export" disabled>📄 JSON формат</button>
+                            <button id="exportValid" class="btn btn-export" disabled>✅ Только валидные</button>
+                            <button id="exportInvalid" class="btn btn-export" disabled>❌ Только невалидные</button>
+                        </div>
+
+                        <div style="margin-top: 20px; padding: 15px; background: #e8f4fd; border-radius: 5px;">
+                            <strong>📁 Доступные файлы:</strong>
+                            <div id="fileList" style="margin-top: 10px;">
+                                <div style="color: #7f8c8d; text-align: center;">
+                                    Загруженные файлы появятся здесь
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h2>🎯 Быстрая проверка</h2>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4>🔍 Проверить отдельный email</h4>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <input type="email" id="singleEmail" placeholder="Введите email для проверки" 
+                               style="flex: 1; padding: 12px; border: 2px solid #3498db; border-radius: 5px;">
+                        <button id="checkSingle" class="btn" style="width: auto;">Проверить</button>
+                    </div>
+                    <div id="singleResult" style="margin-top: 15px; padding: 15px; border-radius: 5px; display: none;"></div>
+                </div>
+
+                <h3>📋 История проверок</h3>
+                <div class="results-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Файл</th>
+                                <th>Email'ов</th>
+                                <th>Валидных</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                    История проверок появится здесь
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 20px; padding: 20px; background: #fff3cd; border-radius: 8px;">
+                    <h4>💡 Советы по использованию</h4>
+                    <ul style="margin-top: 10px; margin-left: 20px;">
+                        <li>Разбивайте большие списки на несколько файлов по 10,000 email'ов</li>
+                        <li>Используйте CSV формат для удобства</li>
+                        <li>Регулярно экспортируйте результаты</li>
+                        <li>Проверяйте статистику для анализа качества базы</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        class AdvancedEmailValidator {
+            constructor() {
+                this.emails = [];
+                this.results = [];
+                this.isValidating = false;
+                this.startTime = null;
+                this.checkedCount = 0;
+                this.totalCount = 0;
+                this.statistics = {
+                    total: 0,
+                    valid: 0,
+                    invalid: 0,
+                    categories: {}
+                };
+                this.history = JSON.parse(localStorage.getItem('validationHistory') || '[]');
+            }
+
+            async validateBatch() {
+                if (this.isValidating || this.emails.length === 0) return;
+
+                this.isValidating = true;
+                this.startTime = new Date();
+                this.checkedCount = 0;
+                this.totalCount = this.emails.length;
+                this.results = [];
+                this.statistics = {
+                    total: 0,
+                    valid: 0,
+                    invalid: 0,
+                    categories: {}
+                };
+
+                this.updateUI();
+                this.showNotification('Начинаем проверку email адресов...', 'warning');
+
+                try {
+                    const response = await fetch('/api/validate-batch', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            emails: this.emails
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка сервера: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.results = data.results;
+                        this.statistics = data.statistics;
+                        this.checkedCount = this.totalCount;
+                        this.updateUI();
+                        this.saveToHistory();
+                        this.showNotification('Проверка завершена!', 'success');
+                    } else {
+                        throw new Error(data.error || 'Неизвестная ошибка');
+                    }
+
+                } catch (error) {
+                    console.error('Ошибка проверки:', error);
+                    this.showNotification(`Ошибка: ${error.message}`, 'error');
+                } finally {
+                    this.isValidating = false;
+                    this.updateUI();
+                }
+            }
+
+            stopValidation() {
+                this.isValidating = false;
+                this.showNotification('Проверка остановлена', 'warning');
+            }
+
+            updateUI() {
+                // Основная статистика
+                const validCount = this.statistics.valid || this.results.filter(r => r.isValid).length;
+                const invalidCount = this.statistics.invalid || this.results.filter(r => !r.isValid).length;
+                const notExistingCount = this.statistics.categories?.not_existing || this.results.filter(r => r.category === 'not_existing').length;
+                const formatErrorCount = this.statistics.categories?.invalid_format || this.results.filter(r => r.category === 'invalid_format').length;
+                
+                const total = this.totalCount || this.emails.length;
+                const checked = this.checkedCount;
+
+                document.getElementById('statValid').textContent = validCount;
+                document.getElementById('statInvalid').textContent = invalidCount;
+                document.getElementById('statNotExisting').textContent = notExistingCount;
+                document.getElementById('statFormatError').textContent = formatErrorCount;
+
+                document.getElementById('statValidPercent').textContent = total > 0 ? `${((validCount / total) * 100).toFixed(1)}%` : '0%';
+                document.getElementById('statInvalidPercent').textContent = total > 0 ? `${((invalidCount / total) * 100).toFixed(1)}%` : '0%';
+                document.getElementById('statNotExistingPercent').textContent = total > 0 ? `${((notExistingCount / total) * 100).toFixed(1)}%` : '0%';
+                document.getElementById('statFormatErrorPercent').textContent = total > 0 ? `${((formatErrorCount / total) * 100).toFixed(1)}%` : '0%';
+
+                // Прогресс
+                const progress = total > 0 ? (checked / total) * 100 : 0;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
+
+                // Информация о прогрессе
+                document.getElementById('checkedInfo').textContent = `${checked} из ${total}`;
+                
+                // Скорость
+                if (this.startTime && checked > 0) {
+                    const timeElapsed = (new Date() - this.startTime) / 1000 / 60; // в минутах
+                    const emailsPerMinute = Math.round(checked / timeElapsed);
+                    document.getElementById('speedInfo').textContent = `${emailsPerMinute}/мин`;
+                    
+                    // Время
+                    const hours = Math.floor(timeElapsed / 60);
+                    const minutes = Math.floor(timeElapsed % 60);
+                    const seconds = Math.floor((timeElapsed * 60) % 60);
+                    document.getElementById('timeInfo').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                // Кнопки
+                document.getElementById('validateBtn').disabled = this.isValidating || this.emails.length === 0;
+                document.getElementById('stopBtn').disabled = !this.isValidating;
+                document.getElementById('validateText').innerHTML = this.isValidating ? 
+                    '<div class="loading-spinner"></div> Проверка...' : '🚀 Начать проверку';
+
+                // Детальная статистика
+                this.updateDetailedStats();
+                
+                // Результаты
+                this.updateResultsTable();
+                
+                // Кнопки экспорта
+                const hasResults = this.results.length > 0;
+                document.getElementById('exportCsv').disabled = !hasResults;
+                document.getElementById('exportJson').disabled = !hasResults;
+                document.getElementById('exportValid').disabled = !hasResults;
+                document.getElementById('exportInvalid').disabled = !hasResults;
+            }
+
+            updateDetailedStats() {
+                const stats = this.statistics;
+                
+                document.getElementById('statTotal').textContent = stats.total || 0;
+                document.getElementById('statValidDetailed').textContent = stats.valid || 0;
+                document.getElementById('statInvalidFormat').textContent = stats.categories?.invalid_format || 0;
+                document.getElementById('statNoMx').textContent = stats.categories?.no_mx_records || 0;
+                document.getElementById('statNotExist').textContent = stats.categories?.not_existing || 0;
+                document.getElementById('statSmtpError').textContent = stats.categories?.smtp_error || 0;
+                document.getElementById('statTimeout').textContent = stats.categories?.smtp_timeout || 0;
+                document.getElementById('statConnection').textContent = stats.categories?.connection_error || 0;
+
+                // Топ доменов
+                const domainsContainer = document.getElementById('topDomains');
+                if (stats.topDomains && stats.topDomains.length > 0) {
+                    domainsContainer.innerHTML = stats.topDomains.map(domain => `
+                        <div class="domain-item">
+                            <span>${domain.domain}</span>
+                            <span>${domain.valid}/${domain.total} (${domain.validityRate}%)</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            updateResultsTable() {
+                const tbody = document.getElementById('resultsBody');
+                
+                if (this.results.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                ${this.emails.length > 0 ? 
+                                    'Готово к проверке ' + this.emails.length + ' email\'ов<br><small>Нажмите "Начать проверку"</small>' : 
+                                    'Загрузите файл и начните проверку<br><small>Результаты появятся здесь</small>'
+                                }
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // Показываем только последние 50 результатов для производительности
+                const displayResults = this.results.slice(-50);
+                
+                tbody.innerHTML = '';
+
+                displayResults.forEach(result => {
+                    const row = document.createElement('tr');
+                    
+                    const statusClass = `status-${result.category}`;
+                    const statusText = this.getStatusText(result);
+                    const categoryText = this.getCategoryText(result.category);
+                    
+                    row.innerHTML = `
+                        <td>${this.escapeHtml(result.email)}</td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>${categoryText}</td>
+                        <td>${this.escapeHtml(result.message)}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+
+                // Прокручиваем к последним результатам
+                tbody.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            getStatusText(result) {
+                if (result.isValid) return '✅ Валидный';
+                switch (result.category) {
+                    case 'not_existing': return '📭 Не существует';
+                    case 'invalid_format': return '📝 Ошибка формата';
+                    case 'no_mx_records': return '🌐 Нет MX';
+                    case 'smtp_timeout': return '⏰ Таймаут';
+                    case 'smtp_error': return '⚡ Ошибка SMTP';
+                    default: return '❌ Невалидный';
+                }
+            }
+
+            getCategoryText(category) {
+                const categories = {
+                    'valid': 'Валидный email',
+                    'invalid_format': 'Неверный формат',
+                    'no_mx_records': 'Нет MX записей',
+                    'dns_error': 'Ошибка DNS',
+                    'not_existing': 'Не существует',
+                    'smtp_timeout': 'Таймаут SMTP',
+                    'smtp_error': 'Ошибка SMTP',
+                    'connection_error': 'Ошибка подключения',
+                    'mailbox_error': 'Ошибка почтового ящика',
+                    'temporary_error': 'Временная ошибка',
+                    'processing_error': 'Ошибка обработки'
+                };
+                return categories[category] || category;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            showNotification(message, type) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type} show`;
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+            }
+
+            saveToHistory() {
+                const historyItem = {
+                    timestamp: new Date().toISOString(),
+                    filename: 'batch_validation',
+                    total: this.totalCount,
+                    valid: this.statistics.valid,
+                    invalid: this.statistics.invalid,
+                    duration: new Date() - this.startTime
+                };
+                
+                this.history.unshift(historyItem);
+                this.history = this.history.slice(0, 10); // Храним только 10 последних
+                localStorage.setItem('validationHistory', JSON.stringify(this.history));
+                this.updateHistory();
+            }
+
+            updateHistory() {
+                const tbody = document.getElementById('historyBody');
+                
+                if (this.history.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                История проверок появится здесь
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = this.history.map(item => `
+                    <tr>
+                        <td>${new Date(item.timestamp).toLocaleString()}</td>
+                        <td>${item.filename}</td>
+                        <td>${item.total}</td>
+                        <td>${item.valid}</td>
+                        <td>✅ Завершено</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Методы экспорта
+            exportCsv() {
+                const csvContent = "data:text/csv;charset=utf-8,Email,Status,Category,Message\n" +
+                    this.results.map(result => 
+                        `"${result.email}","${result.isValid ? 'Valid' : 'Invalid'}","${result.category}","${result.message}"`
+                    ).join("\n");
+                
+                this.downloadFile(csvContent, `email_validation_${this.getTimestamp()}.csv`);
+            }
+
+            exportJson() {
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    total: this.totalCount,
+                    statistics: this.statistics,
+                    results: this.results
+                };
+                
+                const jsonContent = "data:text/json;charset=utf-8," + JSON.stringify(data, null, 2);
+                this.downloadFile(jsonContent, `email_validation_${this.getTimestamp()}.json`);
+            }
+
+            exportValidOnly() {
+                const validEmails = this.results
+                    .filter(result => result.isValid)
+                    .map(result => result.email)
+                    .join("\n");
+                
+                const csvContent = "data:text/csv;charset=utf-8,Email\n" +
+                    validEmails.split("\n").map(email => `"${email}"`).join("\n");
+                
+                this.downloadFile(csvContent, `valid_emails_${this.getTimestamp()}.csv`);
+            }
+
+            exportInvalidOnly() {
+                const invalidEmails = this.results
+                    .filter(result => !result.isValid)
+                    .map(result => `"${result.email}","${result.category}","${result.message}"`)
+                    .join("\n");
+                
+                const csvContent = "data:text/csv;charset=utf-8,Email,Category,Message\n" + invalidEmails;
+                this.downloadFile(csvContent, `invalid_emails_${this.getTimestamp()}.csv`);
+            }
+
+            downloadFile(content, filename) {
+                const encodedUri = encodeURI(content);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            getTimestamp() {
+                return new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+            }
+        }
+
+        // Инициализация
+        const validator = new AdvancedEmailValidator();
+
+        // Обработчики событий
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            let totalEmails = [];
+            let filesProcessed = 0;
+
+            files.forEach(file => {
+                // Проверяем размер файла (100MB максимум)
+                if (file.size > 100 * 1024 * 1024) {
+                    alert(`Файл "${file.name}" слишком большой! Максимальный размер: 100MB`);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    const emails = content.split('\n')
+                        .map(email => email.trim())
+                        .filter(email => {
+                            if (email.length === 0) return false;
+                            if (email.startsWith('#')) return false;
+                            if (email.includes(',')) {
+                                return email.split(',')[0].trim().includes('@');
+                            }
+                            return email.includes('@');
+                        })
+                        .map(email => {
+                            if (email.includes(',')) {
+                                return email.split(',')[0].trim();
+                            }
+                            return email;
+                        });
+
+                    totalEmails = totalEmails.concat(emails);
+                    filesProcessed++;
+
+                    // Обновляем список файлов
+                    updateFileList(files);
+
+                    if (filesProcessed === files.length) {
+                        // Ограничиваем общее количество до 50,000
+                        if (totalEmails.length > 50000) {
+                            alert(`Общее количество email'ов (${totalEmails.length}) превышает лимит 50,000. Будут обработаны первые 50,000.`);
+                            totalEmails = totalEmails.slice(0, 50000);
+                        }
+
+                        validator.emails = totalEmails;
+                        validator.updateUI();
+                        validator.showNotification(`Загружено ${files.length} файлов, всего ${totalEmails.length} email'ов`, 'success');
+                    }
+                };
+                
+                reader.onerror = function() {
+                    alert(`Ошибка при чтении файла "${file.name}"!`);
+                    filesProcessed++;
+                };
+                
+                reader.readAsText(file);
+            });
+        });
+
+        function updateFileList(files) {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = files.map(file => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #dee2e6;">
+                    <span>${file.name}</span>
+                    <span style="color: #7f8c8d; font-size: 0.9em;">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('validateBtn').addEventListener('click', function() {
+            validator.validateBatch();
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            validator.stopValidation();
+        });
+
+        // Экспорт
+        document.getElementById('exportCsv').addEventListener('click', () => validator.exportCsv());
+        document.getElementById('exportJson').addEventListener('click', () => validator.exportJson());
+        document.getElementById('exportValid').addEventListener('click', () => validator.exportValidOnly());
+        document.getElementById('exportInvalid').addEventListener('click', () => validator.exportInvalidOnly());
+
+        // Табы
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', function() {
+                // Убираем активный класс у всех кнопок и контента
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // Добавляем активный класс текущей кнопке и контенту
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab') + '-tab';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Проверка одиночного email
+        document.getElementById('checkSingle').addEventListener('click', async function() {
+            const emailInput = document.getElementById('singleEmail');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                alert('Введите email для проверки');
+                return;
+            }
+
+            this.disabled = true;
+            this.textContent = 'Проверка...';
+
+            try {
+                const response = await fetch('/api/validate-single', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const result = await response.json();
+                const resultDiv = document.getElementById('singleResult');
+                
+                resultDiv.style.display = 'block';
+                resultDiv.className = `status-${result.category}`;
+                resultDiv.style.background = result.isValid ? '#d4edda' : '#f8d7da';
+                resultDiv.style.border = `2px solid ${result.isValid ? '#28a745' : '#dc3545'}`;
+                resultDiv.innerHTML = `
+                    <strong>Email:</strong> ${email}<br>
+                    <strong>Статус:</strong> ${result.isValid ? '✅ Валидный' : '❌ Невалидный'}<br>
+                    <strong>Категория:</strong> ${validator.getCategoryText(result.category)}<br>
+                    <strong>Сообщение:</strong> ${result.message}
+                `;
+
+            } catch (error) {
+                alert('Ошибка при проверке email: ' + error.message);
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Проверить';
+            }
+        });
+
+        // Инициализация при загрузке
+        window.addEventListener('load', () => {
+            validator.updateHistory();
+            
+            // Проверка статуса сервера
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Сервер готов:', data);
+                })
+                .catch(error => {
+                    console.log('Сервер не отвечает, но приложение может работать в ограниченном режиме');
+                });
+        });
+    </script>
+</body>
+</html>
